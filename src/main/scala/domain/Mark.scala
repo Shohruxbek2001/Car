@@ -6,12 +6,20 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @JsonCodec
-case class User(
+case class Mark(
    id: UUID,
    createdAt: LocalDateTime,
-   firstName: String,
-   lastName: String,
-   nickName: String,
-   phone: String,
-   password: String,
+   name: String,
+   )
+
+@JsonCodec
+case class UpdateMark(
+   id: UUID,
+   name: String,
+   )
+
+@JsonCodec
+case class StatMark(
+   mark: String,
+   cars: Long,
    )

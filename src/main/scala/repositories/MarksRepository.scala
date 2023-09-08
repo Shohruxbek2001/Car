@@ -1,44 +1,81 @@
 package repositories
 
-import cats.implicits.toFlatMapOps
-import cats.implicits.toFunctorOps
 import cats.effect.{Async, Resource}
-import domain.{CreateMark, Mark}
+import cats.implicits.{toFlatMapOps, toFunctorOps}
+import domain.{CreateMark, Mark, UpdateMark}
 import effects.{Calendar, GenUUID}
 import org.typelevel.log4cats.Logger
-import skunk.{*:, Session}
+import repositories.sql.MarksSql
+import skunk.Session
+import skunk.data.Completion
 
 import java.util.UUID
 
-trait UsersRepository[F[_]] {
-  def create(createUser: CreateMark): F[Mark]
+trait MarksRepository[F[_]] {
+  def create(createMark: CreateMark): F[Mark]
+
+  def getAllMark: F[List[Mark]]
+
+  def getMark(markId: UUID): F[Option[Mark]]
+  def findMark(mark: String): F[Option[Mark]]
+  def update(updateMark: UpdateMark): F[Unit]
+
+  def delete(markId: UUID): F[Unit]
 
 }
 
-object UsersRepository {
+object MarksRepository {
   def make[F[_] : Async : Logger](
-     implicit
-     session: Resource[F, Session[F]]
-   ): UsersRepository[F] = new UsersRepository[F] {
+                                   implicit
+                                   session: Resource[F, Session[F]]
+                                 ): MarksRepository[F] = new MarksRepository[F] {
+
     import sql.MarksSql._
 
-    override def create(createUser: CreateMark): F[Mark] =
+    override def create(createMark: CreateMark): F[Mark] =
       for {
         id <- GenUUID[F].make
         now <- Calendar[F].currentDateTime
-        user = Mark(
+        mark = Mark(
           id = id,
           createdAt = now,
-          firstName = createUser.firstname,
-          lastName = createUser.lastname,
-          nickName = createUser.nickname,
-          phone = createUser.phone,
-          password = createUser.password
+          name = createMark.name,
         )
         _ <- session.use(
-          _.execute(insert)(user)
+          _.execute(insert)(mark)
         )
-      } yield user
+      } yield mark
+
+    override def getAllMark: F[List[Mark]] = {
+      session.use {
+        _.execute(getAllMarks)
+      }
+    }
+
+    override def getMark(markId: UUID): F[Option[Mark]] = {
+      session.use {
+        _.option(MarksSql.getMark)(markId)
+      }
+    }
+
+    override def findMark(mark: String): F[Option[Mark]] = {
+      session.use {
+        _.option(MarksSql.findMark)(mark)
+      }
+    }
+
+    override def update(updateMark: UpdateMark): F[Unit] = {
+      session.use {
+        _.execute(MarksSql.update)(updateMark).void
+      }
+    }
+
+    override def delete(markId: UUID): F[Unit] = {
+      session.use {
+        _.execute(MarksSql.delete)(markId).void
+      }
+    }
+
 
   }
 }
