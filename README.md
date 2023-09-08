@@ -48,3 +48,14 @@ sbt run
   "color": "Black"
 }
 ```
+
+### Чтобы соединить базы заполните поля в файле main.scala
+```scala
+    Session.single[IO]( // (2)
+      host = "localhost",
+      port = 5432,
+      user = "test",
+      database = "test",
+      password = Some("Password")
+    )
+```

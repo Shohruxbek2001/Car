@@ -22,8 +22,8 @@ object Main extends IOApp {
     Session.single[IO]( // (2)
       host = "localhost",
       port = 5432,
-      user = "workout",
-      database = "chat",
+      user = "test",
+      database = "test",
       password = Some("123")
     )
 
